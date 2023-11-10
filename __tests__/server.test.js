@@ -1,10 +1,20 @@
 import { ApolloServer } from '@apollo/server';
 import { typeDefs } from '../schema/schema.js';
 import { resolvers } from '../resolvers/resolvers.js';
-const testServer = new ApolloServer({
-  typeDefs,
-  resolvers,
+
+let testServer;
+
+beforeAll(() => {
+  testServer = new ApolloServer({
+    typeDefs,
+    resolvers,
+  });
 });
+
+afterAll(() => {
+  testServer.stop();
+});
+
 describe('Tests the Game Endpoints', () => {
   test('returns an array', async () => {
     const response = await testServer.executeOperation({
@@ -454,7 +464,7 @@ describe('Tests the Review endpoint to return a relational Game', () => {
   });
 });
 
-describe('Tests for Mutation', () => {
+describe('Tests for Mutation: DeleteGame', () => {
   test('should return an array', async () => {
     const response = await testServer.executeOperation({
       query: `
@@ -490,5 +500,115 @@ describe('Tests for Mutation', () => {
     const gamesLeft = response.body.singleResult.data.deleteGame;
 
     expect(gamesLeft).toHaveLength(3);
+  });
+});
+
+describe('Tests for Mutation: AddGame', () => {
+  test('should return the newly created game object', async () => {
+    const response = await testServer.executeOperation({
+      query: `
+      mutation AddGame($game: AddGameInput!) {
+        addGame(game: $game) {
+          id,
+          title,
+          platform,
+          rating,
+        }
+      }
+      `,
+      variables: {
+        game: {
+          title: 'Zelda, Ocarina of Time',
+          platform: ['Switch', 'Xbox'],
+          rating: 6,
+        },
+      },
+    });
+
+    const newGame = response.body.singleResult.data.addGame;
+
+    expect(typeof newGame).toBe('object');
+  });
+  test('should return aa game object with the properties id, title, platform and rating', async () => {
+    const response = await testServer.executeOperation({
+      query: `
+      mutation AddGame($game: AddGameInput!) {
+        addGame(game: $game) {
+          id,
+          title,
+          platform,
+          rating,
+        }
+      }
+      `,
+      variables: {
+        game: {
+          title: 'Zelda, Ocarina of Time',
+          platform: ['Switch', 'Xbox'],
+          rating: 6,
+        },
+      },
+    });
+
+    const newGame = response.body.singleResult.data.addGame;
+
+    expect(newGame).toHaveProperty('id', expect.any(String));
+    expect(newGame).toHaveProperty('title', expect.any(String));
+    expect(newGame).toHaveProperty('platform', expect.any(Object));
+    expect(newGame).toHaveProperty('rating', expect.any(Number));
+  });
+});
+
+describe('Tests for Mutation: UpdateGame', () => {
+  test('returns a game object', async () => {
+    const response = await testServer.executeOperation({
+      query: `
+      mutation UpdateGame($id:ID!, $edits:EditGameInput!) {
+        updateGame(id:$id, edits: $edits) {
+          id,
+          title,
+          platform,
+          rating
+        }
+      }
+      
+      `,
+      variables: {
+        edits: {
+          title: 'The Edited One',
+        },
+        id: '4',
+      },
+    });
+
+    const updatedGame = response.body.singleResult.data.updateGame;
+    expect(typeof updatedGame).toBe('object');
+  });
+  test('returns a game object with the properties id, title, platform, rating', async () => {
+    const response = await testServer.executeOperation({
+      query: `
+      mutation UpdateGame($id:ID!, $edits:EditGameInput!) {
+        updateGame(id:$id, edits: $edits) {
+          id,
+          title,
+          platform,
+          rating
+        }
+      }
+      
+      `,
+      variables: {
+        edits: {
+          title: 'The Edited One',
+        },
+        id: '4',
+      },
+    });
+
+    const updatedGame = response.body.singleResult.data.updateGame;
+    expect(updatedGame).toHaveProperty('id', expect.any(String));
+    expect(updatedGame).toHaveProperty('title', expect.any(String));
+    expect(updatedGame).toHaveProperty('platform', expect.any(Object));
+    expect(updatedGame).toHaveProperty('rating', expect.any(Number));
   });
 });
